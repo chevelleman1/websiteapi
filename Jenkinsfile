@@ -85,8 +85,10 @@ pipeline {
     
     post {
         always {
-            echo 'Cleaning up...'
-            sh 'docker rmi ${DOCKER_IMAGE}:${DOCKER_TAG} || true'
+            script {
+                echo 'Cleaning up...'
+                sh 'docker rmi ${DOCKER_IMAGE}:${DOCKER_TAG} || true'
+            }
         }
         success {
             echo 'Deployment successful!'
