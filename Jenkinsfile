@@ -1,5 +1,5 @@
 pipeline {
-    agent any
+    agent { label 'jenkins_node' }
     
     environment {
         DOCKER_IMAGE = 'chevelleman1/webapi'
@@ -84,10 +84,6 @@ pipeline {
     }
     
     post {
-        always {
-            echo 'Cleaning up...'
-            sh 'docker rmi ${DOCKER_IMAGE}:${DOCKER_TAG} || true'
-        }
         success {
             echo 'Deployment successful!'
         }
