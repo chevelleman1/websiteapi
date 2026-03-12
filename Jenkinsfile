@@ -32,12 +32,12 @@ pipeline {
         //     }
         // }
         
-        stage('Build') {
-            steps {
-                echo 'Building TypeScript...'
-                sh 'npm run build'
-            }
-        }
+        // stage('Build') {
+        //     steps {
+        //         echo 'Building TypeScript...'
+        //         sh 'npm run build'
+        //     }
+        // }
         
         stage('Build Docker Image') {
             steps {
