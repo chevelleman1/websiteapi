@@ -11,6 +11,8 @@ RUN npm ci
 
 # Copy source code
 COPY . .
+COPY tsconfig.json ./
+COPY src/ ./src/
 
 # Build TypeScript
 RUN npm run build
