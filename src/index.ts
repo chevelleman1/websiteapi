@@ -34,7 +34,15 @@ app.use(limiter);
 // API Key authentication middleware
 const authenticateApiKey = (req: Request, res: Response, next: NextFunction) => {
   const providedKey = req.headers['x-api-key'] as string;
-  
+  const referer = req.headers.referer || req.headers.origin;
+  const ALLOWED_DOMAINS = ["https://bobvel.sytes.net/", "http://localhost:8081/"]  
+
+  if (referer === null || referer === undefined) {
+    return res.status(401).json({ error: `Your domain could not be determined; you are not authorized to use this API.` });
+  }
+  if (!ALLOWED_DOMAINS.includes(referer)) {
+    return res.status(401).json({ error: `Your domain is not authorized to use this API.` });
+  }
   if (!providedKey) {
     return res.status(401).json({ error: `API key is required, u sent: ${providedKey}` });
   }
