@@ -36,11 +36,11 @@ const authenticateApiKey = (req: Request, res: Response, next: NextFunction) => 
   const providedKey = req.headers['x-api-key'] as string;
   
   if (!providedKey) {
-    return res.status(401).json({ error: 'API key is required' });
+    return res.status(401).json({ error: `API key is required, u sent: ${providedKey}` });
   }
   
   if (providedKey !== API_KEY) {
-    return res.status(403).json({ error: 'Invalid API key' });
+    return res.status(403).json({ error: `API key is WRONG, u sent: ${providedKey}` });
   }
   
   next();
