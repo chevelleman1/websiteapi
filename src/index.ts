@@ -15,6 +15,7 @@ interface ContactForm {
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const node_env = process.env.NODE_ENV || 'production';
 const API_KEY = process.env.API_KEY || 'your-secure-api-key-here';
 
 // Security middleware
@@ -33,26 +34,36 @@ app.use(limiter);
 
 // API Key authentication middleware
 const authenticateApiKey = (req: Request, res: Response, next: NextFunction) => {
-  console.log(req);
+  console.log(req.headers);
   const providedKey = req.headers['x-internal-key'] as string;
+  const hiddenWeapon = req.headers['x-gecko-f'] as string;
   const referer = req.headers.referer || req.headers.origin;
-  const ALLOWED_DOMAINS = ["https://bobvel.sytes.net/", "http://localhost:8081/"]  
+  const ALLOWED_DOMAINS = ["https://bobvel.sytes.net/", "http://localhost:8081/"]
 
-  if (referer === null || referer === undefined) {
-    return res.status(401).json({ error: `Your domain could not be determined; you are not authorized to use this API.` });
+
+  //if dev, don't check for secret header, otherwise, check for the header
+  if (node_env === 'dev') {
+    next();
+  } 
+  else {
+        if (hiddenWeapon === null || hiddenWeapon === undefined) {
+      return res.status(401).json({ error: `Nice try.  You don't know the secret ingredient.` });
+    }
+    if (referer === null || referer === undefined) {
+      return res.status(401).json({ error: `Your domain could not be determined; you are not authorized to use this API.` });
+    }
+    if (!ALLOWED_DOMAINS.includes(referer)) {
+      return res.status(401).json({ error: `Your domain is not authorized to use this API.` });
+    }
+    if (!providedKey) {
+      return res.status(401).json({ error: `API key is required to access this resource.` });
+    }
+
+    if (providedKey !== API_KEY) {
+      return res.status(403).json({ error: `API key is invalid.` });
+    }
+
   }
-  if (!ALLOWED_DOMAINS.includes(referer)) {
-    return res.status(401).json({ error: `Your domain is not authorized to use this API.` });
-  }
-  if (!providedKey) {
-    return res.status(401).json({ error: `API key is required, u sent: ${providedKey}` });
-  }
-  
-  if (providedKey !== API_KEY) {
-    return res.status(403).json({ error: `API key is WRONG, u sent: ${providedKey}` });
-  }
-  
-  next();
 };
 
 // Basic route
@@ -67,7 +78,7 @@ app.get('/health', (req: Request, res: Response) => {
 
 // API routes
 app.get('/api', (req: Request, res: Response) => {
-  res.json({ 
+  res.json({
     message: 'API is running',
     endpoints: {
       health: '/health',
@@ -100,17 +111,17 @@ app.post(
     // Check validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ 
-        errors: errors.array() 
+      return res.status(400).json({
+        errors: errors.array()
       });
     }
 
     const { name, email, message } = req.body as ContactForm;
-    
+
     // In a real application, you would save to a database or send an email
     console.log('Contact form submission:', { name, email, message });
-    
-    res.status(201).json({ 
+
+    res.status(201).json({
       message: 'Thank you for your message! We will get back to you soon.',
       data: { name, email, message }
     });

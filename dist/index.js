@@ -12,6 +12,7 @@ const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const express_validator_1 = require("express-validator");
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 3000;
+const node_env = process.env.NODE_ENV || 'production';
 const API_KEY = process.env.API_KEY || 'your-secure-api-key-here';
 // Security middleware
 app.use((0, helmet_1.default)()); // Sets security HTTP headers
@@ -27,22 +28,32 @@ const limiter = (0, express_rate_limit_1.default)({
 app.use(limiter);
 // API Key authentication middleware
 const authenticateApiKey = (req, res, next) => {
-    const providedKey = req.headers['x-api-key'];
+    console.log(req.headers);
+    const providedKey = req.headers['x-internal-key'];
+    const hiddenWeapon = req.headers['x-gecko-f'];
     const referer = req.headers.referer || req.headers.origin;
     const ALLOWED_DOMAINS = ["https://bobvel.sytes.net/", "http://localhost:8081/"];
-    if (referer === null || referer === undefined) {
-        return res.status(401).json({ error: `Your domain could not be determined; you are not authorized to use this API.` });
+    //if dev, don't check for secret header, otherwise, check for the header
+    if (node_env === 'dev') {
+        next();
     }
-    if (!ALLOWED_DOMAINS.includes(referer)) {
-        return res.status(401).json({ error: `Your domain is not authorized to use this API.` });
+    else {
+        if (hiddenWeapon === null || hiddenWeapon === undefined) {
+            return res.status(401).json({ error: `Nice try.  You don't know the secret ingredient.` });
+        }
+        if (referer === null || referer === undefined) {
+            return res.status(401).json({ error: `Your domain could not be determined; you are not authorized to use this API.` });
+        }
+        if (!ALLOWED_DOMAINS.includes(referer)) {
+            return res.status(401).json({ error: `Your domain is not authorized to use this API.` });
+        }
+        if (!providedKey) {
+            return res.status(401).json({ error: `API key is required to access this resource.` });
+        }
+        if (providedKey !== API_KEY) {
+            return res.status(403).json({ error: `API key is invalid.` });
+        }
     }
-    if (!providedKey) {
-        return res.status(401).json({ error: `API key is required, u sent: ${providedKey}` });
-    }
-    if (providedKey !== API_KEY) {
-        return res.status(403).json({ error: `API key is WRONG, u sent: ${providedKey}` });
-    }
-    next();
 };
 // Basic route
 app.get('/', (req, res) => {
