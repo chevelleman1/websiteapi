@@ -44,9 +44,9 @@ const authenticateApiKey = (req: Request, res: Response, next: NextFunction) => 
   //if dev, don't check for secret header, otherwise, check for the header
   if (node_env === 'dev') {
     next();
-  } 
+  }
   else {
-        if (hiddenWeapon === null || hiddenWeapon === undefined) {
+    if (hiddenWeapon === null || hiddenWeapon === undefined) {
       return res.status(401).json({ error: `Nice try.  You don't know the secret ingredient.` });
     }
     if (referer === null || referer === undefined) {
@@ -64,6 +64,7 @@ const authenticateApiKey = (req: Request, res: Response, next: NextFunction) => 
     }
 
   }
+  next();
 };
 
 // Basic route
