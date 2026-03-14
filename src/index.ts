@@ -34,7 +34,7 @@ app.use(limiter);
 // API Key authentication middleware
 const authenticateApiKey = (req: Request, res: Response, next: NextFunction) => {
   console.log(req);
-  const providedKey = req.headers['x-api-key'] as string;
+  const providedKey = req.headers['x-internal-key'] as string;
   const referer = req.headers.referer || req.headers.origin;
   const ALLOWED_DOMAINS = ["https://bobvel.sytes.net/", "http://localhost:8081/"]  
 
