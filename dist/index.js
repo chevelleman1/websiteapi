@@ -28,19 +28,14 @@ const limiter = (0, express_rate_limit_1.default)({
 app.use(limiter);
 // API Key authentication middleware
 const authenticateApiKey = (req, res, next) => {
-    console.log(req.headers);
     const providedKey = req.headers['x-internal-key'];
-    const hiddenWeapon = req.headers['x-gecko-f'];
     const referer = req.headers.referer || req.headers.origin;
-    const ALLOWED_DOMAINS = ["https://bobvel.sytes.net/", "http://localhost:8081/"];
+    const ALLOWED_DOMAINS = ["https://velcommsoftware.ddns.net/", "http://localhost:8081/"];
     //if dev, don't check for secret header, otherwise, check for the header
     if (node_env === 'dev') {
         next();
     }
     else {
-        if (hiddenWeapon === null || hiddenWeapon === undefined) {
-            return res.status(401).json({ error: `Nice try.  You don't know the secret ingredient.` });
-        }
         if (referer === null || referer === undefined) {
             return res.status(401).json({ error: `Your domain could not be determined; you are not authorized to use this API.` });
         }
@@ -54,6 +49,7 @@ const authenticateApiKey = (req, res, next) => {
             return res.status(403).json({ error: `API key is invalid.` });
         }
     }
+    next();
 };
 // Basic route
 app.get('/', (req, res) => {

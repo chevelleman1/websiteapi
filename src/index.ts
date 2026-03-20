@@ -34,11 +34,9 @@ app.use(limiter);
 
 // API Key authentication middleware
 const authenticateApiKey = (req: Request, res: Response, next: NextFunction) => {
-  console.log(req.headers);
   const providedKey = req.headers['x-internal-key'] as string;
-  const hiddenWeapon = req.headers['x-gecko-f'] as string;
   const referer = req.headers.referer || req.headers.origin;
-  const ALLOWED_DOMAINS = ["https://bobvel.sytes.net/", "http://localhost:8081/"]
+  const ALLOWED_DOMAINS = ["https://velcommsoftware.ddns.net/", "http://localhost:8081/"]
 
 
   //if dev, don't check for secret header, otherwise, check for the header
@@ -46,9 +44,6 @@ const authenticateApiKey = (req: Request, res: Response, next: NextFunction) => 
     next();
   }
   else {
-    if (hiddenWeapon === null || hiddenWeapon === undefined) {
-      return res.status(401).json({ error: `Nice try.  You don't know the secret ingredient.` });
-    }
     if (referer === null || referer === undefined) {
       return res.status(401).json({ error: `Your domain could not be determined; you are not authorized to use this API.` });
     }
