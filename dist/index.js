@@ -9,11 +9,30 @@ const helmet_1 = __importDefault(require("helmet"));
 const cors_1 = __importDefault(require("cors"));
 const morgan_1 = __importDefault(require("morgan"));
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
-const express_validator_1 = require("express-validator");
+const pg_1 = require("pg");
 const app = (0, express_1.default)();
 const PORT = process.env.PORT || 3000;
 const node_env = process.env.NODE_ENV || 'production';
 const API_KEY = process.env.API_KEY || 'your-secure-api-key-here';
+// Database configuration
+const pool = new pg_1.Pool({
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT || '5432'),
+    database: process.env.DB_NAME || 'main_db',
+    user: process.env.DB_USER || 'admin',
+    password: process.env.DB_PASSWORD || 'password',
+});
+// Initialize database connection
+const initDatabase = async () => {
+    try {
+        // Test the connection - table is expected to exist
+        await pool.query('SELECT 1');
+        console.log('Database connection established');
+    }
+    catch (error) {
+        console.error('Error connecting to database:', error);
+    }
+};
 // Security middleware
 app.use((0, helmet_1.default)()); // Sets security HTTP headers
 app.use((0, cors_1.default)()); // Enable CORS for all origins
@@ -33,7 +52,7 @@ const authenticateApiKey = (req, res, next) => {
     const ALLOWED_DOMAINS = ["https://velcommsoftware.ddns.net/", "http://localhost:8081/"];
     //if dev, don't check for secret header, otherwise, check for the header
     if (node_env === 'dev') {
-        next();
+        return next();
     }
     else {
         if (referer === null || referer === undefined) {
@@ -70,39 +89,45 @@ app.get('/api', (req, res) => {
         }
     });
 });
-// Contact form endpoint with API key authentication and input validation
-app.post('/api/contact', authenticateApiKey, [
-    // Input validation
-    (0, express_validator_1.body)('name')
-        .trim()
-        .isLength({ min: 1, max: 100 })
-        .withMessage('Name must be between 1 and 100 characters'),
-    (0, express_validator_1.body)('email')
-        .isEmail()
-        .normalizeEmail()
-        .withMessage('Please provide a valid email'),
-    (0, express_validator_1.body)('message')
-        .trim()
-        .isLength({ min: 1, max: 1000 })
-        .withMessage('Message must be between 1 and 1000 characters')
-], (req, res) => {
-    // Check validation errors
-    const errors = (0, express_validator_1.validationResult)(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({
-            errors: errors.array()
-        });
+// Simple validation function
+const validateContactForm = (data) => {
+    const errors = [];
+    if (!data.name || data.name.trim().length === 0 || data.name.trim().length > 100) {
+        errors.push('Name must be between 1 and 100 characters');
+    }
+    if (!data.email || !data.email.includes('@')) {
+        errors.push('Please provide a valid email');
+    }
+    if (!data.message || data.message.trim().length === 0 || data.message.trim().length > 1000) {
+        errors.push('Message must be between 1 and 1000 characters');
+    }
+    return errors;
+};
+// Contact form endpoint with API key authentication
+app.post('/api/contact', authenticateApiKey, (req, res) => {
+    // Manual validation
+    const errors = validateContactForm(req.body);
+    if (errors.length > 0) {
+        res.status(400).json({ errors });
+        return;
     }
     const { name, email, message } = req.body;
-    // In a real application, you would save to a database or send an email
-    console.log('Contact form submission:', { name, email, message });
-    res.status(201).json({
-        message: 'Thank you for your message! We will get back to you soon.',
-        data: { name, email, message }
+    // Save to PostgreSQL database using callback style
+    pool.query('INSERT INTO customer_emails (name, email, message) VALUES ($1, $2, $3) RETURNING id', [name.trim(), email.trim(), message.trim()], (err, result) => {
+        if (err) {
+            console.error('Error saving contact to database:', err);
+            return res.status(500).json({ error: 'Failed to save contact form. Please try again later.' });
+        }
+        console.log('Contact form saved to database:', { id: result.rows[0].id, name, email });
+        return res.status(201).json({
+            message: 'Thank you for your message! We will get back to you soon.',
+            data: { name, email, message }
+        });
     });
 });
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
+    await initDatabase();
     console.log(`Server is running on http://localhost:${PORT}`);
 });
 exports.default = app;
