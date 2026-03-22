@@ -76,7 +76,6 @@ pipeline {
                 docker stop api || true
                 docker rm api || true
                 docker run -d --name api \
-                    --network your_network_name \
                     -e PORT=3000 \
                     -e API_KEY=${API_KEY} \
                     -e DB_HOST=postgres_db \
