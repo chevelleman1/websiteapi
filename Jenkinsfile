@@ -8,6 +8,7 @@ pipeline {
         // These should be configured in Jenkins credentials
         DOCKER_CREDS = credentials('docker-hub-credentials')
         API_KEY = credentials('api-key')
+        DB_CREDS = credentials('postgres-db-credentials') 
     }
     
     stages {
@@ -64,23 +65,32 @@ pipeline {
         }
         
         stage('Deploy to Server') {
-            steps {
-                echo 'Deploying to server...'
-                withCredentials([string(credentialsId: 'api-key', variable: 'API_KEY')]) {
-                    sh '''
-                        docker pull chevelleman1/webapi:latest
-                        docker stop api || true
-                        docker rm api || true
-                        docker run -d --name api \
-                            -e PORT=3000 \
-                            -e API_KEY=$API_KEY \
-                            -p 3000:3000 \
-                            --restart unless-stopped \
-                            chevelleman1/webapi:latest
-                    '''
-                }
-            }
+    steps {
+        echo 'Deploying to server...'
+        withCredentials([
+            string(credentialsId: 'api-key', variable: 'API_KEY'),
+            usernamePassword(credentialsId: 'postgres-db-credentials', usernameVariable: 'DB_USER', passwordVariable: 'DB_PASS')
+        ]) {
+            sh """
+                docker pull chevelleman1/webapi:latest
+                docker stop api || true
+                docker rm api || true
+                docker run -d --name api \
+                    --network your_network_name \
+                    -e PORT=3000 \
+                    -e API_KEY=${API_KEY} \
+                    -e DB_HOST=postgres_db \
+                    -e DB_PORT=5432 \
+                    -e DB_NAME=main_db \
+                    -e DB_USER=${DB_USER} \
+                    -e DB_PASSWORD=${DB_PASS} \
+                    -p 3000:3000 \
+                    --restart unless-stopped \
+                    chevelleman1/webapi:latest
+            """
         }
+    }
+}
     }
     
     post {
